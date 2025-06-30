@@ -1,3 +1,4 @@
+```
 src/
 ├── components/                      #  UI 구성 요소 (재사용 가능한 컴포넌트 모음)
 │   ├── InfoContent.tsx              # 주소 입력/리스트 출력 등 전체 레이아웃을 구성하는 상위 컴포넌트
@@ -12,5 +13,4 @@ src/
 │                                    # - "/" 경로 접근 시 "/login"으로 이동
 │                                    # - "/login" → LoginPage
 │                                    # - "/info"  → InfoPage
-
-
+```
