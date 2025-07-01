@@ -13,33 +13,44 @@ type Address = {
   memo: string;
   username: string;
   created_at: string;
+  isDeletable?: boolean; // 사용자가 추가한 주소인지 판별
 };
 
 function InfoPage() {
   const [inputAddress, setInputAddress] = useState('');
   const [inputMemo, setInputMemo] = useState('');
-  const [addresses, setAddresses] = useState<Address[]>([]);
+  // 기본 주소와 사용자 추가 주소를 구분하여 상태 관리
+  const [defaultAddresses, setDefaultAddresses] = useState<Address[]>([]);
+  const [userAddresses, setUserAddresses] = useState<Address[]>([]);
+  
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
-
   const navigate = useNavigate();
+  const userId = parseInt(localStorage.getItem('userId') || '0');
+  
+    // 기본 주소와 사용자 주소를 합친 전체 목록
+  const allAddresses = [
+    ...defaultAddresses.map(addr => ({ ...addr, isDeletable: false })),
+    ...userAddresses.map(addr => ({ ...addr, isDeletable: true })),
+  ];
 
   useEffect(() => {
-    const userId = localStorage.getItem('userId');
     if (!userId) {
       navigate('/login', { replace: true });
     } else {
-      fetchAddresses();
+      fetchAllAddresses();
     }
-  }, []);
+  }, [userId]);
 
-  const userId = parseInt(localStorage.getItem('userId') || '0');
-
-  const fetchAddresses = async () => {
+  const fetchAllAddresses = async () => {
     try {
-      const res = await axios.get(`${BASE_URL}/addresses`);
-      setAddresses(res.data);
+      const [defaultRes, userRes] = await Promise.all([
+        axios.get(`${BASE_URL}/default-addresses`),
+        axios.get(`${BASE_URL}/users/${userId}/addresses`)
+      ]);
+      setDefaultAddresses(defaultRes.data);
+      setUserAddresses(userRes.data);
     } catch {
-      alert('주소 목록 불러오기 실패');
+      alert('주소 목록을 불러오는 데 실패했습니다.');
     }
   };
 
@@ -47,12 +58,11 @@ function InfoPage() {
     if (!inputAddress.trim() || !userId) return;
 
     try {
-      await axios.post(`${BASE_URL}/addresses`, {
+      await axios.post(`${BASE_URL}/users/${userId}/addresses`, {
         address: inputAddress,
         memo: inputMemo,
-        user_id: userId,
       });
-      fetchAddresses();
+      fetchAllAddresses();
       setInputAddress('');
       setInputMemo('');
     } catch {
@@ -75,8 +85,8 @@ function InfoPage() {
     if (!window.confirm('정말 삭제하시겠습니까?')) return;
 
     try {
-      await axios.delete(`${BASE_URL}/addresses/${id}`);
-      fetchAddresses();
+      await axios.delete(`${BASE_URL}/user-addresses/${id}`);
+      fetchAllAddresses();
     } catch {
       alert('삭제 실패');
     }
@@ -94,13 +104,13 @@ function InfoPage() {
             onChangeMemo={(e) => setInputMemo(e.target.value)}
             onKeyDown={handleKeyDown}
             onSubmit={handleInputSubmit}
-            addresses={addresses}
+            addresses={allAddresses}
             onDelete={handleDelete}
             onSelectAddress={setSelectedAddress}
           />
         </div>
         <div className="flex-1">
-          <MapView addresses={addresses} selectedAddress={selectedAddress} />
+          <MapView addresses={allAddresses} selectedAddress={selectedAddress} />
         </div>
       </div>
     </div>

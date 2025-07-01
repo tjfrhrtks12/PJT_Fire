@@ -13,6 +13,7 @@ type Address = {
   memo: string;
   username: string;
   created_at: string;
+  isDeletable?: boolean;
 };
 
 type Props = {
@@ -52,7 +53,7 @@ const MapView = ({ addresses, selectedAddress }: Props) => {
     const loadMap = () => {
       const { kakao } = window;
       const container = mapContainerRef.current;
-      if (!container) return;
+      if (!container || !addresses) return;
 
       const map = new kakao.maps.Map(container, {
         center: new kakao.maps.LatLng(35.1796, 129.0756),
@@ -62,15 +63,29 @@ const MapView = ({ addresses, selectedAddress }: Props) => {
       mapRef.current = map;
       geocoderRef.current = geocoder;
 
+      markerMapRef.current.forEach(val => val.marker.setMap(null));
       const markerMap = new Map();
+
+      const redMarkerImage = new kakao.maps.MarkerImage(
+        'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png',
+        new kakao.maps.Size(31, 35)
+      );
 
       addresses.forEach((addr) => {
         geocoder.addressSearch(addr.address, (result: any, status: any) => {
           if (status === kakao.maps.services.Status.OK) {
             const coords = new kakao.maps.LatLng(result[0].y, result[0].x);
-            const marker = new kakao.maps.Marker({ map, position: coords });
+            
+            const markerOptions = {
+              map,
+              position: coords,
+              // addr.isDeletable이 true일 경우에만 빨간색 마커 이미지 적용
+              ...(addr.isDeletable && { image: redMarkerImage })
+            };
+            
+            const marker = new kakao.maps.Marker(markerOptions);
 
-            const formattedMemo = addr.memo.replace(/\r\n|\r|\n/g, "<br/>");
+            const formattedMemo = addr.memo ? addr.memo.replace(/\r\n|\r|\n/g, "<br/>") : "";
 
             const infowindow = new kakao.maps.InfoWindow({
               removable: true,
@@ -87,9 +102,7 @@ const MapView = ({ addresses, selectedAddress }: Props) => {
                   <div style="font-weight:bold; margin-bottom:4px;">
                     ${addr.address}
                   </div>
-                  <div>
-                    ${addr.memo.replace(/\r\n|\n/g, "<br/>")}
-                  </div>
+                  <div>${formattedMemo}</div>
                 </div>
               `
             });
@@ -107,6 +120,15 @@ const MapView = ({ addresses, selectedAddress }: Props) => {
       });
 
       markerMapRef.current = markerMap;
+
+      if (addresses.length > 0) {
+        geocoder.addressSearch(addresses[0].address, (result: any, status: any) => {
+           if (status === kakao.maps.services.Status.OK) {
+              const coords = new kakao.maps.LatLng(result[0].y, result[0].x);
+              map.setCenter(coords);
+           }
+        });
+      }
     };
 
     if (window.kakao && window.kakao.maps) {
