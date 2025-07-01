@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import NavBar from '../components/NavBar';
 import InfoContent from '../components/InfoContent'; 
+import MapView from '../components/MapView';
 
 const BASE_URL = 'http://127.0.0.1:8000';
 
@@ -18,6 +19,7 @@ function InfoPage() {
   const [inputAddress, setInputAddress] = useState('');
   const [inputMemo, setInputMemo] = useState('');
   const [addresses, setAddresses] = useState<Address[]>([]);
+  const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
 
   const navigate = useNavigate();
 
@@ -81,19 +83,26 @@ function InfoPage() {
   };
 
   return (
-    <div>
+    <div className="flex flex-col h-screen">
       <NavBar onLogout={handleLogout} />
-
-      <InfoContent
-        inputAddress={inputAddress}
-        inputMemo={inputMemo}
-        onChangeAddress={(e) => setInputAddress(e.target.value)}
-        onChangeMemo={(e) => setInputMemo(e.target.value)}
-        onKeyDown={handleKeyDown}
-        onSubmit={handleInputSubmit}
-        addresses={addresses}
-        onDelete={handleDelete}
-      />
+      <div className="flex flex-1 bg-gray-100 h-full overflow-hidden">
+        <div className="w-[400px] bg-white p-6 border-r h-full">
+          <InfoContent
+            inputAddress={inputAddress}
+            inputMemo={inputMemo}
+            onChangeAddress={(e) => setInputAddress(e.target.value)}
+            onChangeMemo={(e) => setInputMemo(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onSubmit={handleInputSubmit}
+            addresses={addresses}
+            onDelete={handleDelete}
+            onSelectAddress={setSelectedAddress}
+          />
+        </div>
+        <div className="flex-1">
+          <MapView addresses={addresses} selectedAddress={selectedAddress} />
+        </div>
+      </div>
     </div>
   );
 }
