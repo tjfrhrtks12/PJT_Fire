@@ -51,25 +51,32 @@ const MapView = ({ addresses, selectedAddress }: Props) => {
             const formattedMemo = addr.memo.replace(/\r\n|\r|\n/g, "<br/>");
 
             const infowindow = new kakao.maps.InfoWindow({
-              content: `<div style="
-                padding:10px;
-                font-size:14px;
-                line-height:1.5;
-                min-width:220px;
-                max-width:300px;
-                white-space:normal;
-                word-break:break-word;
-              ">
-                <strong>${addr.address}</strong><br/>
-                ${formattedMemo}
-              </div>`
+              removable: true,
+              content: `
+                <div style="
+                  padding:8px;
+                  font-size:14px;
+                  color:#333;
+                  line-height:1.4;
+                  max-width:240px;
+                  white-space: normal;
+                  overflow-wrap: break-word;
+                ">
+                  <div style="font-weight:bold; margin-bottom:4px;">
+                    ${addr.address}
+                  </div>
+                  <div>
+                    ${addr.memo.replace(/\r\n|\n/g, "<br/>")}
+                  </div>
+                </div>
+              `
             });
 
-            kakao.maps.event.addListener(marker, "click", () => {
+            // 클릭 이벤트에 연결
+            kakao.maps.event.addListener(marker, 'click', () => {
               if (openInfoRef.current) openInfoRef.current.close();
               infowindow.open(map, marker);
               openInfoRef.current = infowindow;
-              map.panTo(coords);
             });
 
             markerMap.set(addr.id, { marker, infowindow });
