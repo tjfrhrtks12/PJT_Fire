@@ -13,6 +13,7 @@ type Address = {
   memo: string;
   username: string;
   created_at: string;
+  user_id: number;
 };
 
 function InfoPage() {
@@ -20,7 +21,6 @@ function InfoPage() {
   const [inputMemo, setInputMemo] = useState('');
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
-  const [myAddedIds, setMyAddedIds] = useState<number[]>([]);
 
   const navigate = useNavigate();
 
@@ -48,7 +48,7 @@ function InfoPage() {
     if (!inputAddress.trim() || !userId) return;
 
     try {
-      const res = await axios.post(`${BASE_URL}/addresses`, {
+      await axios.post(`${BASE_URL}/addresses`, {
         address: inputAddress,
         memo: inputMemo,
         user_id: userId,
@@ -56,9 +56,6 @@ function InfoPage() {
       fetchAddresses();
       setInputAddress('');
       setInputMemo('');
-      if (res.data && res.data.id) {
-        setMyAddedIds((prev) => [...prev, res.data.id]);
-      }
     } catch {
       alert('주소 저장 실패');
     }
@@ -127,7 +124,7 @@ function InfoPage() {
           </div>
         </div>
         <div className="flex-1">
-          <MapView addresses={addresses} selectedAddress={selectedAddress} myAddedIds={myAddedIds} />
+          <MapView addresses={addresses} selectedAddress={selectedAddress} />
         </div>
       </div>
     </div>
