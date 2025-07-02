@@ -51,19 +51,22 @@ const MapView = ({ addresses, selectedAddress }: Props) => {
   const mapRef = useRef<any>(null);
   const geocoderRef = useRef<any>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const markerMapRef = useRef<Map<number, { marker: any; infowindow: any }>>(
-    new Map()
-  );
-  const openInfoRef = useRef<any>(null);
+  
+  const addressMarkersRef = useRef<Map<number, { marker: any; infowindow: any; type: 'my' | 'other' }>>(new Map());
+  const facilityMarkersRef = useRef<{ marker: any; infowindow: any }[]>([]);
+  
+  const openInfoRef = useRef<{ marker: any; infowindow: any } | null>(null);
 
-  const [disasterMessages, setDisasterMessages] = useState<DisasterMessage[]>(
-    []
-  );
+  const [disasterMessages, setDisasterMessages] = useState<DisasterMessage[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [currentRegion, setCurrentRegion] = useState<string>("");
   const [facilities, setFacilities] = useState<Facility[]>([]);
 
-  // 지도 및 마커 초기화
+  const [showMyMarkers, setShowMyMarkers] = useState(true);
+  const [showOtherMarkers, setShowOtherMarkers] = useState(true);
+  const [showFacilities, setShowFacilities] = useState(true);
+
+  // 지도 및 마커 '생성'
   useEffect(() => {
     const loadMap = () => {
       const { kakao } = window;
@@ -78,58 +81,60 @@ const MapView = ({ addresses, selectedAddress }: Props) => {
       mapRef.current = map;
       geocoderRef.current = geocoder;
 
-      const markerMap = new Map();
-      const myUserId = Number(localStorage.getItem('userId'));
+      // 이전 마커 및 인포윈도우 정리
+      addressMarkersRef.current.forEach(item => item.marker.setMap(null));
+      addressMarkersRef.current.clear();
+      facilityMarkersRef.current.forEach(item => item.marker.setMap(null));
+      facilityMarkersRef.current = [];
+      
+      if (openInfoRef.current) {
+        openInfoRef.current.infowindow.close();
+        openInfoRef.current = null;
+      }
 
-      // 주소 마커
+      // 주소 마커 생성
+      const myUserId = Number(localStorage.getItem('userId'));
       addresses.forEach((addr) => {
         geocoder.addressSearch(addr.address, (result: any, status: any) => {
           if (status === kakao.maps.services.Status.OK) {
             const coords = new kakao.maps.LatLng(result[0].y, result[0].x);
+            const markerType = addr.user_id !== 1 ? 'other' : 'my';
             let marker: any;
-            if (addr.user_id !== 1) {
+
+            if (markerType === 'other') {
               const imageSrc = 'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png';
               const imageSize = new kakao.maps.Size(64, 69);
               const imageOption = { offset: new kakao.maps.Point(27, 69) };
               const markerImage = new kakao.maps.MarkerImage(imageSrc, imageSize, imageOption);
-              marker = new kakao.maps.Marker({ map, position: coords, image: markerImage });
+              marker = new kakao.maps.Marker({ position: coords, image: markerImage });
             } else {
-              marker = new kakao.maps.Marker({ map, position: coords });
+              marker = new kakao.maps.Marker({ position: coords });
             }
+            
             const infowindow = new kakao.maps.InfoWindow({
               removable: true,
-              content: `
-                <div style="
-                  padding:8px;
-                  font-size:14px;
-                  color:#333;
-                  line-height:1.4;
-                  max-width:240px;
-                  white-space: normal;
-                  overflow-wrap: break-word;
-                ">
-                  <div style="font-weight:bold; margin-bottom:4px;">
-                    ${addr.address}
-                  </div>
-                  <div>
-                    ${addr.memo.replace(/\r\n|\n/g, "<br/>")}
-                  </div>
-                </div>
-              `,
+              content: `<div style="padding:8px;font-size:14px;color:#333;line-height:1.4;max-width:240px;white-space:normal;overflow-wrap:break-word;"><div style="font-weight:bold;margin-bottom:4px;">${addr.address}</div><div>${addr.memo.replace(/\r\n|\n/g, "<br/>")}</div></div>`,
             });
+            
             kakao.maps.event.addListener(marker, "click", () => {
-              if (openInfoRef.current) openInfoRef.current.close();
+              if (openInfoRef.current) openInfoRef.current.infowindow.close();
               infowindow.open(map, marker);
-              openInfoRef.current = infowindow;
+              openInfoRef.current = { marker, infowindow };
             });
-            markerMap.set(addr.id, { marker, infowindow });
+            
+            addressMarkersRef.current.set(addr.id, { marker, infowindow, type: markerType });
+
+            const isVisible = (markerType === 'my' && showMyMarkers) || (markerType === 'other' && showOtherMarkers);
+            marker.setMap(isVisible ? map : null);
           }
         });
       });
 
-      // 시설 마커 (소방서/병원)
+      // 시설 마커 생성
+      const newFacilityMarkers: { marker: any; infowindow: any }[] = [];
       facilities.forEach((fac) => {
-        if (fac.type !== 'fire' && fac.type !== 'medical') return; // fire/medical만 마커 생성
+        if (fac.type !== 'fire' && fac.type !== 'medical') return;
+
         const pos = new kakao.maps.LatLng(fac.lat, fac.lng);
         let imageSrc = fac.type === 'fire' ? '/fire-truck.png' : '/hospital.png';
         const markerImage = new kakao.maps.MarkerImage(
@@ -137,22 +142,28 @@ const MapView = ({ addresses, selectedAddress }: Props) => {
           new kakao.maps.Size(44, 49),
           { offset: new kakao.maps.Point(22, 49) }
         );
-        const marker = new kakao.maps.Marker({ map, position: pos, image: markerImage });
+
+        // 마커 생성 시점에 바로 지도에 표시/숨김 처리
+        const marker = new kakao.maps.Marker({
+            position: pos,
+            image: markerImage,
+            map: showFacilities ? map : null
+        });
+
         const infowindow = new kakao.maps.InfoWindow({
           removable: true,
-          content: `
-            <div style="font-weight:bold; margin-bottom:4px;">${fac.name}</div>
-            <div>${fac.address}</div>
-          `
+          content: `<div style="padding: 8px; font-size: 14px;"><div style="font-weight:bold; margin-bottom:4px;">${fac.name}</div><div>${fac.address}</div></div>`
         });
+        
         kakao.maps.event.addListener(marker, "click", () => {
-          if (openInfoRef.current) openInfoRef.current.close();
+          if (openInfoRef.current) openInfoRef.current.infowindow.close();
           infowindow.open(map, marker);
-          openInfoRef.current = infowindow;
+          openInfoRef.current = { marker, infowindow };
         });
-      });
 
-      markerMapRef.current = markerMap;
+        newFacilityMarkers.push({ marker, infowindow });
+      });
+      facilityMarkersRef.current = newFacilityMarkers;
     };
 
     if (window.kakao && window.kakao.maps) {
@@ -166,6 +177,28 @@ const MapView = ({ addresses, selectedAddress }: Props) => {
     }
   }, [addresses, facilities]);
 
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    addressMarkersRef.current.forEach(item => {
+      const isVisible = (item.type === 'my' && showMyMarkers) || (item.type === 'other' && showOtherMarkers);
+      item.marker.setMap(isVisible ? map : null);
+    });
+
+    facilityMarkersRef.current.forEach(item => {
+      item.marker.setMap(showFacilities ? map : null);
+    });
+    
+    if (openInfoRef.current) {
+      const associatedMarker = openInfoRef.current.marker;
+      if (associatedMarker && associatedMarker.getMap() === null) {
+        openInfoRef.current.infowindow.close();
+        openInfoRef.current = null;
+      }
+    }
+  }, [showMyMarkers, showOtherMarkers, showFacilities]);
+
   // 선택된 주소 위치로 이동
   useEffect(() => {
     if (selectedAddress && geocoderRef.current && mapRef.current) {
@@ -173,25 +206,22 @@ const MapView = ({ addresses, selectedAddress }: Props) => {
         selectedAddress.address,
         (result: any, status: any) => {
           if (status === window.kakao.maps.services.Status.OK) {
-            const coords = new window.kakao.maps.LatLng(
-              result[0].y,
-              result[0].x
-            );
+            const coords = new window.kakao.maps.LatLng(result[0].y, result[0].x);
             mapRef.current.setCenter(coords);
             mapRef.current.setLevel(5, { animate: true });
 
-            const entry = markerMapRef.current.get(selectedAddress.id);
-            if (entry) {
-              if (openInfoRef.current) openInfoRef.current.close();
+            const entry = addressMarkersRef.current.get(selectedAddress.id);
+            if (entry && entry.marker.getMap()) {
+              if (openInfoRef.current) openInfoRef.current.infowindow.close();
               entry.infowindow.open(mapRef.current, entry.marker);
-              openInfoRef.current = entry.infowindow;
+              openInfoRef.current = { marker: entry.marker, infowindow: entry.infowindow };
             }
           }
         }
       );
     }
   }, [selectedAddress]);
-
+  
   // 재난문자 가져오기 및 지도 idle 이벤트 연결
   useEffect(() => {
     const map = mapRef.current;
@@ -215,7 +245,6 @@ const MapView = ({ addresses, selectedAddress }: Props) => {
         const proxyUrl = "https://thingproxy.freeboard.io/fetch/";
         const targetApiUrl = "https://www.safetydata.go.kr/V2/api/DSSP-IF-00247";
 
-        // 먼저 총 개수 조회
         const firstParams = new URLSearchParams({
           serviceKey,
           pageNo: "1",
@@ -232,7 +261,6 @@ const MapView = ({ addresses, selectedAddress }: Props) => {
           return;
         }
 
-        // 마지막 페이지 호출
         const numOfRows = 100;
         const lastPageNo = Math.ceil(totalCount / numOfRows);
         const lastParams = new URLSearchParams({
@@ -252,7 +280,6 @@ const MapView = ({ addresses, selectedAddress }: Props) => {
           지역: msg.RPTN_RGN_NM,
         })).reverse();
 
-        // 최근 3일 필터
         const threeDaysAgo = new Date();
         threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
         const recent = allMessages.filter((m) => {
@@ -287,9 +314,7 @@ const MapView = ({ addresses, selectedAddress }: Props) => {
       );
     };
 
-    // 초기 한 번
     onMapIdle();
-    // idle 이벤트 리스너
     window.kakao.maps.event.addListener(map, "idle", onMapIdle);
     return () => {
       window.kakao.maps.event.removeListener(map, "idle", onMapIdle);
@@ -299,17 +324,57 @@ const MapView = ({ addresses, selectedAddress }: Props) => {
   // 시설 데이터 fetch
   useEffect(() => {
     axios
-        .get('http://127.0.0.1:8000/facilities')
-        .then(res => setFacilities(res.data))
-        .catch(err => {
-          console.error('시설 정보 불러오기 실패:', err);
-        });
+      .get('http://127.0.0.1:8000/facilities')
+      .then(res => setFacilities(res.data))
+      .catch(err => {
+        console.error('시설 정보 불러오기 실패:', err);
+      });
   }, []);
 
   return (
     <div className="relative w-full h-full">
       {/* 카카오 맵 컨테이너 */}
       <div id="map" ref={mapContainerRef} style={{ width: "100%", height: "100%" }} />
+
+      {/* 마커 토글 체크박스 UI */}
+      <div className="absolute top-12 left-3 bg-white bg-opacity-80 p-3 rounded-lg shadow-lg z-10 text-sm">
+        <h4 className="font-bold mb-2 pb-1 border-b border-gray-400">마커 필터</h4>
+        <div className="space-y-1 mt-2">
+          <div>
+            <label className="flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showFacilities}
+                onChange={() => setShowFacilities(prev => !prev)}
+                className="mr-2 h-4 w-4"
+              />
+              <span>주변 병원/소방서</span>
+            </label>
+          </div>
+          <div>
+            <label className="flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showMyMarkers}
+                onChange={() => setShowMyMarkers(prev => !prev)}
+                className="mr-2 h-4 w-4"
+              />
+              <span>부산광역시 지정 인명피해 우려지역</span>
+            </label>
+          </div>
+          <div>
+            <label className="flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showOtherMarkers}
+                onChange={() => setShowOtherMarkers(prev => !prev)}
+                className="mr-2 h-4 w-4"
+              />
+              <span>수기 등록 위험 지역</span>
+            </label>
+          </div>
+        </div>
+      </div>
 
       {/* 재난문자 팝업 */}
       <div className="absolute top-12 right-3 w-full max-w-sm bg-black bg-opacity-75 text-white p-4 rounded-lg shadow-lg z-10">
