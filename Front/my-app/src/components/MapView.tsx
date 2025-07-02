@@ -13,12 +13,12 @@ type Address = {
   memo: string;
   username: string;
   created_at: string;
+  user_id: number;
 };
 
 type Props = {
   addresses: Address[];
   selectedAddress: Address | null;
-  myAddedIds: number[];
 };
 
 type DisasterMessage = {
@@ -38,7 +38,7 @@ type GeocoderResult = {
   } | null;
 }[];
 
-const MapView = ({ addresses, selectedAddress, myAddedIds }: Props) => {
+const MapView = ({ addresses, selectedAddress }: Props) => {
   const mapRef = useRef<any>(null);
   const geocoderRef = useRef<any>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -69,25 +69,23 @@ const MapView = ({ addresses, selectedAddress, myAddedIds }: Props) => {
       geocoderRef.current = geocoder;
 
       const markerMap = new Map();
-      // 내 username(localStorage에서 가져옴)
-      const myUsername = localStorage.getItem('username');
-      // 가장 최근(최대 id) 주소 id 구하기
-      const maxId = addresses.length > 0 ? Math.max(...addresses.map(a => a.id)) : null;
+      // 내 userId(localStorage에서 가져옴)
+      const myUserId = Number(localStorage.getItem('userId'));
 
       addresses.forEach((addr) => {
         geocoder.addressSearch(addr.address, (result: any, status: any) => {
           if (status === kakao.maps.services.Status.OK) {
             const coords = new kakao.maps.LatLng(result[0].y, result[0].x);
             let marker: any;
-            if (myAddedIds && myAddedIds.includes(addr.id)) {
-              // 내가 프론트에서 추가한 주소는 빨간색 커스텀 마커
+            if (addr.user_id !== 1) {
+              // user_id가 2 이상(일반 사용자)이 추가한 주소는 빨간색 커스텀 마커
               const imageSrc = 'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png';
               const imageSize = new kakao.maps.Size(64, 69);
               const imageOption = { offset: new kakao.maps.Point(27, 69) };
               const markerImage = new kakao.maps.MarkerImage(imageSrc, imageSize, imageOption);
               marker = new kakao.maps.Marker({ map, position: coords, image: markerImage });
             } else {
-              // 기존(파란색) 마커
+              // user_id가 1(관리자)이 추가한 주소는 파란색(기본) 마커
               marker = new kakao.maps.Marker({ map, position: coords });
             }
 
@@ -136,7 +134,7 @@ const MapView = ({ addresses, selectedAddress, myAddedIds }: Props) => {
       script.onload = () => window.kakao.maps.load(loadMap);
       document.head.appendChild(script);
     }
-  }, [addresses, myAddedIds]);
+  }, [addresses]);
 
   // 선택된 주소 위치로 이동
   useEffect(() => {
@@ -274,7 +272,7 @@ const MapView = ({ addresses, selectedAddress, myAddedIds }: Props) => {
       <div id="map" ref={mapContainerRef} style={{ width: "100%", height: "100%" }} />
 
       {/* 재난문자 팝업 */}
-      <div className="absolute top-3 right-3 w-full max-w-sm bg-black bg-opacity-75 text-white p-4 rounded-lg shadow-lg z-10">
+      <div className="absolute top-12 right-3 w-full max-w-sm bg-black bg-opacity-75 text-white p-4 rounded-lg shadow-lg z-10">
         <h3 className="font-bold text-lg border-b border-gray-500 pb-2 mb-2">
           {currentRegion ? `${currentRegion} 재난 문자` : "현재 지역 재난 문자"}
         </h3>
