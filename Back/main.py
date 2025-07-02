@@ -102,7 +102,8 @@ def get_addresses(db: Session = Depends(get_db)):
             "address": a.address,
             "memo": a.memo,
             "username": a.user.username,
-            "created_at": a.created_at.strftime("%Y-%m-%d %H:%M:%S")  # ✅ 포함
+            "created_at": a.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+            "user_id": a.user_id
         }
         for a in addresses
     ]
