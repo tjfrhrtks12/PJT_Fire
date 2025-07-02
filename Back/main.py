@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, create_engine
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, create_engine, text
 from sqlalchemy.orm import sessionmaker, declarative_base, Session, relationship
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
@@ -135,3 +135,21 @@ def update_address(address_id: int, address: AddressCreate, db: Session = Depend
         "username": db_address.user.username,
         "created_at": db_address.created_at.strftime("%Y-%m-%d %H:%M:%S")
     }
+
+# ✅ 시설(facilities) 전체 조회 API
+@app.get("/facilities")
+def get_facilities(db: Session = Depends(get_db)):
+    facilities = db.execute(
+        text("SELECT id, name, address, lat, lng, type FROM facilities")
+    ).fetchall()
+    return [
+        {
+            "id": f[0],
+            "name": f[1],
+            "address": f[2],
+            "lat": float(f[3]),
+            "lng": float(f[4]),
+            "type": f[5]
+        }
+        for f in facilities
+    ]
