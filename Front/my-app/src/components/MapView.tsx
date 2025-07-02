@@ -38,6 +38,15 @@ type GeocoderResult = {
   } | null;
 }[];
 
+type Facility = {
+  id: number;
+  name: string;
+  address: string;
+  lat: number;
+  lng: number;
+  type: string;
+};
+
 const MapView = ({ addresses, selectedAddress }: Props) => {
   const mapRef = useRef<any>(null);
   const geocoderRef = useRef<any>(null);
@@ -52,6 +61,7 @@ const MapView = ({ addresses, selectedAddress }: Props) => {
   );
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [currentRegion, setCurrentRegion] = useState<string>("");
+  const [facilities, setFacilities] = useState<Facility[]>([]);
 
   // 지도 및 마커 초기화
   useEffect(() => {
@@ -69,26 +79,23 @@ const MapView = ({ addresses, selectedAddress }: Props) => {
       geocoderRef.current = geocoder;
 
       const markerMap = new Map();
-      // 내 userId(localStorage에서 가져옴)
       const myUserId = Number(localStorage.getItem('userId'));
 
+      // 주소 마커
       addresses.forEach((addr) => {
         geocoder.addressSearch(addr.address, (result: any, status: any) => {
           if (status === kakao.maps.services.Status.OK) {
             const coords = new kakao.maps.LatLng(result[0].y, result[0].x);
             let marker: any;
             if (addr.user_id !== 1) {
-              // user_id가 2 이상(일반 사용자)이 추가한 주소는 빨간색 커스텀 마커
               const imageSrc = 'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png';
               const imageSize = new kakao.maps.Size(64, 69);
               const imageOption = { offset: new kakao.maps.Point(27, 69) };
               const markerImage = new kakao.maps.MarkerImage(imageSrc, imageSize, imageOption);
               marker = new kakao.maps.Marker({ map, position: coords, image: markerImage });
             } else {
-              // user_id가 1(관리자)이 추가한 주소는 파란색(기본) 마커
               marker = new kakao.maps.Marker({ map, position: coords });
             }
-
             const infowindow = new kakao.maps.InfoWindow({
               removable: true,
               content: `
@@ -110,15 +117,38 @@ const MapView = ({ addresses, selectedAddress }: Props) => {
                 </div>
               `,
             });
-
             kakao.maps.event.addListener(marker, "click", () => {
               if (openInfoRef.current) openInfoRef.current.close();
               infowindow.open(map, marker);
               openInfoRef.current = infowindow;
             });
-
             markerMap.set(addr.id, { marker, infowindow });
           }
+        });
+      });
+
+      // 시설 마커 (소방서/병원)
+      facilities.forEach((fac) => {
+        if (fac.type !== 'fire' && fac.type !== 'medical') return; // fire/medical만 마커 생성
+        const pos = new kakao.maps.LatLng(fac.lat, fac.lng);
+        let imageSrc = fac.type === 'fire' ? '/fire-truck.png' : '/hospital.png';
+        const markerImage = new kakao.maps.MarkerImage(
+          imageSrc,
+          new kakao.maps.Size(44, 49),
+          { offset: new kakao.maps.Point(22, 49) }
+        );
+        const marker = new kakao.maps.Marker({ map, position: pos, image: markerImage });
+        const infowindow = new kakao.maps.InfoWindow({
+          removable: true,
+          content: `
+            <div style="font-weight:bold; margin-bottom:4px;">${fac.name}</div>
+            <div>${fac.address}</div>
+          `
+        });
+        kakao.maps.event.addListener(marker, "click", () => {
+          if (openInfoRef.current) openInfoRef.current.close();
+          infowindow.open(map, marker);
+          openInfoRef.current = infowindow;
         });
       });
 
@@ -134,7 +164,7 @@ const MapView = ({ addresses, selectedAddress }: Props) => {
       script.onload = () => window.kakao.maps.load(loadMap);
       document.head.appendChild(script);
     }
-  }, [addresses]);
+  }, [addresses, facilities]);
 
   // 선택된 주소 위치로 이동
   useEffect(() => {
@@ -265,6 +295,16 @@ const MapView = ({ addresses, selectedAddress }: Props) => {
       window.kakao.maps.event.removeListener(map, "idle", onMapIdle);
     };
   }, [addresses, currentRegion]);
+
+  // 시설 데이터 fetch
+  useEffect(() => {
+    axios
+        .get('http://127.0.0.1:8000/facilities')
+        .then(res => setFacilities(res.data))
+        .catch(err => {
+          console.error('시설 정보 불러오기 실패:', err);
+        });
+  }, []);
 
   return (
     <div className="relative w-full h-full">
