@@ -9,6 +9,7 @@ type Address = {
   memo: string;
   username: string;
   created_at: string;
+  user_id: number;
 };
 
 type Props = {
