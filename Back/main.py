@@ -32,6 +32,38 @@ class Address(Base):
 # ✅ 테이블 생성
 Base.metadata.create_all(bind=engine)
 
+# ── facilities 테이블 및 컬럼 자동 생성 ─────────────────────────────────────
+from sqlalchemy import inspect
+
+# 현재 DB에 반영된 테이블·컬럼 정보 조회
+inspector = inspect(engine)
+with engine.begin() as conn:
+    # 1) 테이블이 없으면 생성
+    if "facilities" not in inspector.get_table_names():
+        conn.execute(text("""
+            CREATE TABLE facilities (
+                id BIGINT PRIMARY KEY AUTO_INCREMENT,
+                name TEXT NOT NULL,
+                address TEXT NOT NULL,
+                lat DOUBLE NOT NULL,
+                lng DOUBLE NOT NULL,
+                type TEXT NOT NULL
+            ) CHARACTER SET utf8mb4;
+        """))
+    else:
+        # 2) 테이블이 있지만 컬럼이 누락됐으면 추가
+        existing = [c["name"] for c in inspector.get_columns("facilities")]
+        if "name"    not in existing:
+            conn.execute(text("ALTER TABLE facilities ADD COLUMN name TEXT NOT NULL"))
+        if "address" not in existing:
+            conn.execute(text("ALTER TABLE facilities ADD COLUMN address TEXT NOT NULL"))
+        if "lat"     not in existing:
+            conn.execute(text("ALTER TABLE facilities ADD COLUMN lat DOUBLE NOT NULL"))
+        if "lng"     not in existing:
+            conn.execute(text("ALTER TABLE facilities ADD COLUMN lng DOUBLE NOT NULL"))
+        if "type"    not in existing:
+            conn.execute(text("ALTER TABLE facilities ADD COLUMN type TEXT NOT NULL"))
+
 # ✅ FastAPI 앱 생성
 app = FastAPI()
 
