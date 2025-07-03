@@ -18,6 +18,8 @@ class User(Base):
     username = Column(String(50), unique=True, nullable=False)
     password = Column(String(100), nullable=False)
     addresses = relationship("Address", back_populates="user")
+    #=========================
+    fire_addresses = relationship("FireAddress", back_populates="user")
 
 # ✅ Address 테이블 (🆕 작성일시 추가됨)
 class Address(Base):
@@ -28,6 +30,17 @@ class Address(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime, default=datetime.now)  # ✅ 자동 저장
     user = relationship("User", back_populates="addresses")
+
+# ===================================
+class FireAddress(Base):
+    __tablename__ = "fire_addresses"
+    id = Column(Integer, primary_key=True, index=True)
+    address = Column(String(200), nullable=False)
+    memo = Column(String(300), nullable=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime, default=datetime.now)
+    user = relationship("User", back_populates="fire_addresses")
+# ===================================
 
 # ✅ 테이블 생성
 Base.metadata.create_all(bind=engine)
@@ -90,6 +103,13 @@ class UserCreate(BaseModel):
     username: str
     password: str
 
+#= ===================================
+class FireAddressCreate(BaseModel):
+    address: str
+    memo: str
+    user_id: int
+# ===================================
+
 # ✅ DB 세션 의존성
 def get_db():
     db = SessionLocal()
@@ -143,7 +163,7 @@ def create_address(address: AddressCreate, db: Session = Depends(get_db)):
 # ✅ 전체 주소 조회 API
 @app.get("/addresses")
 def get_addresses(db: Session = Depends(get_db)):
-    addresses = db.query(Address).all()
+    addresses = db.query(Address).order_by(Address.created_at.desc()).all()
     return [
         {
             "id": a.id,
@@ -200,4 +220,82 @@ def get_facilities(db: Session = Depends(get_db)):
             "type": f[5]
         }
         for f in facilities
+    ]
+
+#==============================================
+@app.post("/fire-addresses")
+def create_fire_address(address: AddressCreate, db: Session = Depends(get_db)):
+    new_address = FireAddress(
+        address=address.address,
+        memo=address.memo,
+        user_id=address.user_id
+    )
+    db.add(new_address)
+    db.commit()
+    db.refresh(new_address)
+    return {
+        "id": new_address.id,
+        "address": new_address.address,
+        "memo": new_address.memo,
+        "username": new_address.user.username,
+        "created_at": new_address.created_at.strftime("%Y-%m-%d %H:%M:%S")
+    }
+
+@app.get("/fire-addresses")
+def get_fire_addresses(db: Session = Depends(get_db)):
+    fire_addresses = db.query(FireAddress).all()
+    return [
+        {
+            "id": a.id,
+            "address": a.address,
+            "memo": a.memo,
+            "username": a.user.username,
+            "created_at": a.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+            "user_id": a.user_id
+        }
+        for a in fire_addresses
+    ]
+
+# 삭제
+@app.delete("/fire-addresses/{address_id}")
+def delete_fire_address(address_id: int, db: Session = Depends(get_db)):
+    address = db.query(FireAddress).filter(FireAddress.id == address_id).first()
+    if not address:
+        raise HTTPException(status_code=404, detail="주소를 찾을 수 없습니다.")
+    db.delete(address)
+    db.commit()
+    return {"message": "삭제 완료"}
+
+# 수정
+@app.put("/fire-addresses/{address_id}")
+def update_fire_address(address_id: int, address: FireAddressCreate, db: Session = Depends(get_db)):
+    db_address = db.query(FireAddress).filter(FireAddress.id == address_id).first()
+    if not db_address:
+        raise HTTPException(status_code=404, detail="주소를 찾을 수 없습니다.")
+    db_address.address = address.address
+    db_address.memo = address.memo
+    db.commit()
+    db.refresh(db_address)
+    return {
+        "id": db_address.id,
+        "address": db_address.address,
+        "memo": db_address.memo,
+        "username": db_address.user.username,
+        "created_at": db_address.created_at.strftime("%Y-%m-%d %H:%M:%S")
+    }
+
+# ✅ 소방서(fire_station) 전체 조회 API
+@app.get("/fire-stations")
+def get_fire_stations(db: Session = Depends(get_db)):
+    stations = db.execute(
+        text("SELECT id, name, address, type FROM fire_station")
+    ).fetchall()
+    return [
+        {
+            "id": s[0],
+            "name": s[1],
+            "address": s[2],
+            "type": s[3]
+        }
+        for s in stations
     ]
