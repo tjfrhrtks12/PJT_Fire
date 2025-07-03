@@ -14,8 +14,8 @@ function Info2Page() {
     <div className="flex flex-col min-h-screen bg-white">
       <NavBar onLogout={handleLogout} />
       <div className="pt-20 p-6">
-        <h1 className="text-2xl font-bold">🧾 Info2Page</h1>
-        <p className="mt-2 text-gray-700">여기에 서브 페이지의 내용을 자유롭게 구성하실 수 있습니다.</p>
+        <h1 className="text-2xl font-bold">Info2Page</h1>
+        <p className="mt-2 text-gray-700">Info2Page</p>
       </div>
     </div>
   );

@@ -9,13 +9,18 @@ const NavBar: React.FC<NavBarProps> = ({ onLogout }) => {
   const navigate = useNavigate();
 
   return (
-    <nav className="flex justify-between items-center bg-white text-gray-800 px-6 py-3 fixed top-0 left-0 w-full z-10">
+    <nav className="flex justify-between items-center bg-transparent text-gray-800 px-6 py-3 fixed top-0 left-0 w-full z-10">
       <div
-        className="text-2xl font-bold cursor-pointer hover:text-gray-600 transition"
+        className="cursor-pointer flex items-center"
         onClick={() => navigate('/select')}
       >
-        😎권나박진
+        <img
+          src="/images/logo.png"
+          alt="ProT 로고"
+          className="h-16 w-auto"
+        />
       </div>
+
       <button
         onClick={onLogout}
         className="hover:text-gray-600 transition"

@@ -10,11 +10,11 @@ function LoginPage() {
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
-  // ✅ 이미 로그인된 경우 select로 리디렉션
+
   useEffect(() => {
     const userId = localStorage.getItem('userId');
     if (userId) {
-      navigate('/select', { replace: true }); // ✅ 뒤로 가도 login 안 보이게
+      navigate('/select', { replace: true }); 
     }
   }, [navigate]);
 
@@ -22,7 +22,7 @@ function LoginPage() {
     try {
       const res = await axios.post(`${BASE_URL}/login`, { username, password });
       localStorage.setItem('userId', String(res.data.user_id));
-      navigate('/select', { replace: true }); // ✅ 로그인 성공 시에도 replace
+      navigate('/select', { replace: true }); 
     } catch (err: any) {
       alert(err.response?.data?.detail || '로그인 실패!');
     }

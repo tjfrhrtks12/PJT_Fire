@@ -86,6 +86,10 @@ class AddressCreate(BaseModel):
     memo: str
     user_id: int
 
+class UserCreate(BaseModel):
+    username: str
+    password: str
+
 # ✅ DB 세션 의존성
 def get_db():
     db = SessionLocal()
@@ -93,6 +97,18 @@ def get_db():
         yield db
     finally:
         db.close()
+
+@app.post("/register")
+def register(user: UserCreate, db: Session = Depends(get_db)):
+    existing_user = db.query(User).filter(User.username == user.username).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="이미 사용 중인 사용자 이름입니다.")
+    
+    new_user = User(username=user.username, password=user.password)
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return {"message": "회원가입 완료", "user_id": new_user.id}
 
 # ✅ 로그인 API
 @app.post("/login")

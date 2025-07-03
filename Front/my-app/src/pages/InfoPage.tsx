@@ -84,7 +84,7 @@ function InfoPage() {
   };
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-screen pt-16">
       <NavBar onLogout={handleLogout} />
       <div className="flex flex-1 bg-gray-100 h-full overflow-hidden">
         <div className="w-[400px] bg-white p-6 border-r h-full flex flex-col">
