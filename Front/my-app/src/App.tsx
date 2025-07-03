@@ -5,6 +5,7 @@ import RegisterPage from './pages/RegisterPage';
 import InfoPage from './pages/InfoPage';
 import SelectPage from './pages/SelectPage';
 import Info2Page from './pages/Info2Page';
+import Info3Page from './pages/Info3Page';
 
 
 
@@ -18,6 +19,7 @@ function App() {
         <Route path="/select" element={<SelectPage />} />
         <Route path="/info" element={<InfoPage />} />
         <Route path="/info2" element={<Info2Page />} />
+        <Route path="/info3" element={<Info3Page />} />
       </Routes>
     </Router>
   );

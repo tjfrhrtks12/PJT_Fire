@@ -22,7 +22,6 @@ function SelectPage() {
       <NavBar onLogout={handleLogout} />
 
       <div className="flex flex-col lg:flex-row justify-center items-center flex-1 px-6 mt-24 gap-10">
-        
         {/* 히어로 이미지 */}
         <div className="w-full lg:w-[1200px] aspect-video relative rounded-2xl overflow-hidden shadow-xl">
           <img
@@ -34,11 +33,11 @@ function SelectPage() {
         </div>
 
         {/* 카드 영역 */}
-        <div className="w-full lg:w-auto flex flex-col gap-8 mt-8 lg:mt-0">
+        <div className="w-full lg:w-auto flex flex-col gap-8 mt-8 lg:mt-0 items-center">
           {/* 카드 1 */}
           <div
             onClick={() => navigate('/info')}
-            className="cursor-pointer bg-gray-200 rounded-2xl shadow-md px-8 py-12 w-full lg:w-80 hover:shadow-xl transition"
+            className="cursor-pointer bg-gray-200 rounded-2xl shadow-md px-8 py-12 w-full sm:w-[280px] md:w-[320px] lg:w-80 hover:shadow-xl transition"
           >
             <div className="text-xl font-bold text-black mb-2">InfoPage</div>
             <p className="text-black text-sm">InfoPage</p>
@@ -47,10 +46,19 @@ function SelectPage() {
           {/* 카드 2 */}
           <div
             onClick={() => navigate('/info2')}
-            className="cursor-pointer bg-gray-200 rounded-2xl shadow-md px-8 py-12 w-full lg:w-80 hover:shadow-xl transition"
+            className="cursor-pointer bg-gray-200 rounded-2xl shadow-md px-8 py-12 w-full sm:w-[280px] md:w-[320px] lg:w-80 hover:shadow-xl transition"
           >
             <div className="text-xl font-bold text-black mb-2">Info2Page</div>
             <p className="text-black text-sm">Info2Page</p>
+          </div>
+
+          {/* 카드 3 */}
+          <div
+            onClick={() => navigate('/info3')}
+            className="cursor-pointer bg-gray-200 rounded-2xl shadow-md px-8 py-12 w-full sm:w-[280px] md:w-[320px] lg:w-80 hover:shadow-xl transition"
+          >
+            <div className="text-xl font-bold text-black mb-2">Info3Page</div>
+            <p className="text-black text-sm">Info3Page</p>
           </div>
         </div>
       </div>

@@ -14,7 +14,7 @@ function LoginPage() {
   useEffect(() => {
     const userId = localStorage.getItem('userId');
     if (userId) {
-      navigate('/select', { replace: true }); 
+      navigate('/login', { replace: true }); 
     }
   }, [navigate]);
 
