@@ -102,14 +102,30 @@ const MapView = ({ addresses, selectedAddress }: Props) => {
             let marker: any;
 
             if (markerType === 'other') {
-              const imageSrc = 'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png';
-              const imageSize = new kakao.maps.Size(64, 69);
-              const imageOption = { offset: new kakao.maps.Point(27, 69) };
+              const imageSrc = '/marker_green.png';
+              const imageSize = new kakao.maps.Size(24, 35);
+              const imageOption = {
+                  offset: new kakao.maps.Point(17, 35)
+              };
+
               const markerImage = new kakao.maps.MarkerImage(imageSrc, imageSize, imageOption);
-              marker = new kakao.maps.Marker({ position: coords, image: markerImage });
-            } else {
-              marker = new kakao.maps.Marker({ position: coords });
-            }
+              marker = new kakao.maps.Marker({
+                  position: coords,
+                  image: markerImage
+              });
+
+          } else {
+              const imageSrc = '/marker_blue.png';
+              const imageSize = new kakao.maps.Size(24, 35);
+              const imageOption = {
+                  offset: new kakao.maps.Point(17, 35)
+              };
+              const markerImage = new kakao.maps.MarkerImage(imageSrc, imageSize, imageOption);
+              marker = new kakao.maps.Marker({
+                  position: coords,
+                  image: markerImage
+              });
+          }
             
             const infowindow = new kakao.maps.InfoWindow({
               removable: true,
@@ -185,7 +201,6 @@ const MapView = ({ addresses, selectedAddress }: Props) => {
       const isVisible = (item.type === 'my' && showMyMarkers) || (item.type === 'other' && showOtherMarkers);
       item.marker.setMap(isVisible ? map : null);
     });
-
     facilityMarkersRef.current.forEach(item => {
       item.marker.setMap(showFacilities ? map : null);
     });
