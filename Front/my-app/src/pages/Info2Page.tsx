@@ -11,6 +11,7 @@ type FireAddress = {
   id: number;
   address: string;
   memo: string;
+  cause: string;
   username: string;
   created_at: string;
   user_id: number;
@@ -26,8 +27,9 @@ type FireStation = {
 function Info2Page() {
   const [inputAddress, setInputAddress] = useState('');
   const [inputMemo, setInputMemo] = useState('');
+  const [inputCause, setInputCause] = useState('');
   const [fireAddresses, setFireAddresses] = useState<FireAddress[]>([]);
-  const [selectedId, setSelectedId] = useState<number | null>(null); // ✅ 추가
+  const [selectedId, setSelectedId] = useState<number | null>(null);
   const [fireStations, setFireStations] = useState<FireStation[]>([]);
   const navigate = useNavigate();
   const userId = parseInt(localStorage.getItem('userId') || '0');
@@ -66,11 +68,13 @@ function Info2Page() {
       await axios.post(`${BASE_URL}/fire-addresses`, {
         address: inputAddress,
         memo: inputMemo,
+        cause: inputCause,
         user_id: userId,
       });
       fetchFireAddresses();
       setInputAddress('');
       setInputMemo('');
+      setInputCause('');
     } catch {
       alert('주소 저장 실패');
     }
@@ -111,6 +115,13 @@ function Info2Page() {
               className="border p-2 w-full rounded"
               placeholder="규모 입력 (예: 약불, 큰불, 화재 발생 등)"
             />
+            <input
+              type="text"
+              value={inputCause}
+              onChange={(e) => setInputCause(e.target.value)}
+              className="border p-2 w-full rounded"
+              placeholder="피해원인 입력"
+            />
 
             <button
               onClick={handleInputSubmit}
@@ -125,7 +136,7 @@ function Info2Page() {
             addresses={fireAddresses}
             fetchAddresses={fetchFireAddresses}
             userId={userId}
-            onSelect={setSelectedId} // 👈 추가된 prop
+            onSelect={setSelectedId}
           />
 
           {/* 소방서 목록 출력 */}
