@@ -42,6 +42,23 @@ class FireAddress(Base):
     user = relationship("User", back_populates="fire_addresses")
 # ===================================
 
+class Block(Base):
+    __tablename__ = "blocks"
+    id = Column(Integer, primary_key=True, index=True)
+    block_lat = Column(
+        String(200), nullable=False
+    )  # 위도 (정확도를 위해 String으로 저장하고 파싱)
+    block_lon = Column(
+        String(200), nullable=False
+    )  # 경도 (정확도를 위해 String으로 저장하고 파싱)
+    total_buildings = Column(Integer, nullable=False)
+    old_buildings = Column(Integer, nullable=False)
+    old_ratio = Column(String(200), nullable=False)  # 비율 (정확도를 위해 String으로 저장하고 파싱)
+    center_lat = Column(String(200), nullable=False)
+    center_lon = Column(String(200), nullable=False)
+    color = Column(String(50), nullable=False)
+    gu_name = Column(String(100), nullable=False)
+
 # ✅ 테이블 생성
 Base.metadata.create_all(bind=engine)
 
@@ -298,4 +315,80 @@ def get_fire_stations(db: Session = Depends(get_db)):
             "type": s[3]
         }
         for s in stations
+    ]
+
+inspector = inspect(engine)
+with engine.begin() as conn:
+    # 1) 테이블이 없으면 생성
+    if "blocks" not in inspector.get_table_names():
+        conn.execute(text("""
+            CREATE TABLE blocks (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                block_lat VARCHAR(200) NOT NULL,
+                block_lon VARCHAR(200) NOT NULL,
+                total_buildings INT NOT NULL,
+                old_buildings INT NOT NULL,
+                old_ratio VARCHAR(200) NOT NULL,
+                center_lat VARCHAR(200) NOT NULL,
+                center_lon VARCHAR(200) NOT NULL,
+                color VARCHAR(50) NOT NULL,
+                gu_name VARCHAR(100) NOT NULL
+            ) CHARACTER SET utf8mb4;
+        """))
+    else:
+        # 2) 테이블이 있지만 컬럼이 누락됐으면 추가
+        existing = [c["name"] for c in inspector.get_columns("blocks")]
+        if "block_lat" not in existing:
+            conn.execute(text("ALTER TABLE blocks ADD COLUMN block_lat VARCHAR(200) NOT NULL"))
+        if "block_lon" not in existing:
+            conn.execute(text("ALTER TABLE blocks ADD COLUMN block_lon VARCHAR(200) NOT NULL"))
+        if "total_buildings" not in existing:
+            conn.execute(text("ALTER TABLE blocks ADD COLUMN total_buildings INT NOT NULL"))
+        if "old_buildings" not in existing:
+            conn.execute(text("ALTER TABLE blocks ADD COLUMN old_buildings INT NOT NULL"))
+        if "old_ratio" not in existing:
+            conn.execute(text("ALTER TABLE blocks ADD COLUMN old_ratio VARCHAR(200) NOT NULL"))
+        if "center_lat" not in existing:
+            conn.execute(text("ALTER TABLE blocks ADD COLUMN center_lat VARCHAR(200) NOT NULL"))
+        if "center_lon" not in existing:
+            conn.execute(text("ALTER TABLE blocks ADD COLUMN center_lon VARCHAR(200) NOT NULL"))
+        if "color" not in existing:
+            conn.execute(text("ALTER TABLE blocks ADD COLUMN color VARCHAR(50) NOT NULL"))
+        if "gu_name" not in existing:
+            conn.execute(text("ALTER TABLE blocks ADD COLUMN gu_name VARCHAR(100) NOT NULL"))
+
+class BlockDataResponse(BaseModel):
+    id: int
+    block_lat: float
+    block_lon: float
+    total_buildings: int
+    old_buildings: int
+    old_ratio: float
+    center_lat: float
+    center_lon: float
+    color: str
+    gu_name: str
+
+# ... (API 엔드포인트 부분에 추가) ...
+
+@app.get("/blocks/{gu_name}", response_model=list[BlockDataResponse])
+def get_blocks_by_gu(gu_name: str, db: Session = Depends(get_db)):
+    blocks = db.query(Block).filter(Block.gu_name == gu_name).all()
+    if not blocks:
+        raise HTTPException(status_code=404, detail=f"{gu_name}에 대한 블록 데이터를 찾을 수 없습니다.")
+    
+    return [
+        {
+            "id": b.id,
+            "block_lat": float(b.block_lat),
+            "block_lon": float(b.block_lon),
+            "total_buildings": b.total_buildings,
+            "old_buildings": b.old_buildings,
+            "old_ratio": float(b.old_ratio),
+            "center_lat": float(b.center_lat),
+            "center_lon": float(b.center_lon),
+            "color": b.color,
+            "gu_name": b.gu_name,
+        }
+        for b in blocks
     ]
