@@ -22,6 +22,10 @@ type FireStation = {
   name: string;
   address: string;
   type: string;
+  lat?: string;
+  lng?: string;
+  cause?: string;
+  created_at?: string;
 };
 
 type Props = {
@@ -104,27 +108,26 @@ const FireMapView = ({ fireAddresses, selectedId, fireStations }: Props) => {
 
       // 소방서 마커 추가
       fireStations.forEach((station) => {
-        geocoder.addressSearch(station.address, (result: any, status: any) => {
-          if (status === kakao.maps.services.Status.OK) {
-            const coords = new kakao.maps.LatLng(result[0].y, result[0].x);
-            const imageSrc = "/fire-truck.png";
-            const imageSize = new kakao.maps.Size(24, 24);
-            const imageOption = { offset: new kakao.maps.Point(12, 24) };
-            const markerImage = new kakao.maps.MarkerImage(imageSrc, imageSize, imageOption);
-            const marker = new kakao.maps.Marker({ position: coords, image: markerImage });
-            marker.setMap(map);
-            const infowindow = new kakao.maps.InfoWindow({
-              removable: true,
-              content: `<div style="padding:8px;font-size:14px;max-width:240px;white-space:normal;">
-                <div style="font-weight:bold;margin-bottom:4px;">${station.name}</div>
-                <div>${station.address}</div>
-              </div>`
-            });
-            kakao.maps.event.addListener(marker, "click", () => {
-              infowindow.open(map, marker);
-            });
-          }
-        });
+        if (station.lat && station.lng) {
+          const coords = new kakao.maps.LatLng(Number(station.lat), Number(station.lng));
+          const imageSrc = "/fire(red).png";
+          const imageSize = new kakao.maps.Size(40, 48);
+          const imageOption = { offset: new kakao.maps.Point(12, 24) };
+          const markerImage = new kakao.maps.MarkerImage(imageSrc, imageSize, imageOption);
+          const marker = new kakao.maps.Marker({ position: coords, image: markerImage });
+          marker.setMap(map);
+          const infowindow = new kakao.maps.InfoWindow({
+            removable: true,
+            content: `<div style="padding:8px;font-size:14px;max-width:240px;white-space:normal;">
+              <div style="font-weight:bold;margin-bottom:4px;">${station.name}</div>
+              <div style=\"font-size:12px;color:gray;\">화재발생일시: ${station.created_at ? station.created_at.split(' ')[0] : ''}</div>
+              ${station.cause ? `<div style=\"font-size:12px;color:gray;\">피해원인: ${station.cause}</div>` : ''}
+            </div>`
+          });
+          kakao.maps.event.addListener(marker, "click", () => {
+            infowindow.open(map, marker);
+          });
+        }
       });
     };
 
