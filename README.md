@@ -1,3 +1,4 @@
+```
 📦 PJT_Fire/
  ┣ 📁 Front/                       # React 기반 재난 대응 통합 프론트엔드
  ┃ ┣ 📁 components/                # 공통 UI + 지도 기능 컴포넌트
@@ -22,3 +23,4 @@
  ┃ ┗ 📄 README.md                  # 프론트엔드 설명 파일
  ┣ 📁 Back/                        # FastAPI 기반 백엔드
  ┃ ┗ 📄 main.py                    # API 서버 진입점 (DB 연결 및 주요 API 포함)
+```
