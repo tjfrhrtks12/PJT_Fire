@@ -338,15 +338,15 @@ def update_fire_address(address_id: int, address: FireAddressCreate, db: Session
 # ✅ 소방서(fire_station) 전체 조회 API
 @app.get("/fire-stations")
 def get_fire_stations(db: Session = Depends(get_db)):
-    stations = db.execute(
-        text("SELECT id, name, address, type FROM fire_station")
-    ).fetchall()
+    stations = db.query(FireStation).all()
     return [
         {
-            "id": s[0],
-            "name": s[1],
-            "address": s[2],
-            "type": s[3]
+            "id": s.id,
+            "name": s.name,
+            "cause": s.cause,
+            "lat": s.lat,
+            "lng": s.lng,
+            "created_at": s.created_at.strftime("%Y-%m-%d %H:%M:%S") if s.created_at else None
         }
         for s in stations
     ]
@@ -426,3 +426,39 @@ def get_blocks_by_gu(gu_name: str, db: Session = Depends(get_db)):
         }
         for b in blocks
     ]
+
+class FireStation(Base):
+    __tablename__ = "fire_station"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(200), nullable=False)
+    cause = Column(String(300), nullable=True)
+    lat = Column(String(100), nullable=True)
+    lng = Column(String(100), nullable=True)
+    created_at = Column(DateTime, default=datetime.now)  # 화재발생일시
+
+# fire_station 테이블 및 컬럼 자동 생성/추가
+with engine.begin() as conn:
+    inspector = inspect(engine)
+    if "fire_station" not in inspector.get_table_names():
+        conn.execute(text("""
+            CREATE TABLE fire_station (
+                id BIGINT PRIMARY KEY AUTO_INCREMENT,
+                name VARCHAR(200) NOT NULL,
+                cause VARCHAR(300),
+                lat DOUBLE,
+                lng DOUBLE,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            ) CHARACTER SET utf8mb4;
+        """))
+    else:
+        existing = [c["name"] for c in inspector.get_columns("fire_station")]
+        if "name" not in existing:
+            conn.execute(text("ALTER TABLE fire_station ADD COLUMN name VARCHAR(200) NOT NULL"))
+        if "cause" not in existing:
+            conn.execute(text("ALTER TABLE fire_station ADD COLUMN cause VARCHAR(300)"))
+        if "lat" not in existing:
+            conn.execute(text("ALTER TABLE fire_station ADD COLUMN lat DOUBLE"))
+        if "lng" not in existing:
+            conn.execute(text("ALTER TABLE fire_station ADD COLUMN lng DOUBLE"))
+        if "created_at" not in existing:
+            conn.execute(text("ALTER TABLE fire_station ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP"))
