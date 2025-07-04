@@ -35,9 +35,18 @@ function RegisterPage() {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-100">
+    <div className="flex flex-col justify-start items-center min-h-screen bg-gray-100 pt-24">
+      {/* 🔥 로고 영역 */}
+      <img
+        src="/images/logo.png"
+        alt="ProT 로고"
+        className="w-52 h-auto mb-4 mt-10"
+      />
+
+      {/* 📦 회원가입 박스 */}
       <div className="w-full max-w-sm bg-white p-8 rounded-lg shadow-md">
         <h2 className="text-2xl font-bold text-center mb-6">회원가입</h2>
+        
         <input
           placeholder="username"
           value={username}
@@ -55,11 +64,10 @@ function RegisterPage() {
         />
         <button
           onClick={handleRegister}
-          className="bg-sky-300 hover:bg-sky-400 text-white p-2 rounded w-full"
+          className="bg-gray-400 hover:bg-gray-500 text-white p-2 rounded w-full"
         >
           회원가입
         </button>
-
 
         <div className="mt-4 text-center text-sm text-gray-500">
           이미 계정이 있으신가요?{' '}
