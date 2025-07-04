@@ -1,6 +1,4 @@
-// src/components/OldBuildingBlocksMap.tsx
 import React, { useEffect, useRef, useState, useCallback } from "react";
-// import Papa from "papaparse"; // PapaParse는 더 이상 필요 없으므로 제거
 import { BlockData, BlockOverlay } from "../types/BlockData";
 
 declare global {
@@ -9,10 +7,8 @@ declare global {
   }
 }
 
-// 부산시 구 목록 (각 파일이 특정 '구'의 데이터라고 가정)
-// 'processed_block_data.csv'는 기본값으로 표시할 특정 구 (예: 강서구)의 데이터라고 가정합니다.
 const BUSAN_GU_LIST = [
-  { name: "연제구"}, // filename은 이제 백엔드 호출에 사용되지 않지만, 목록 유지를 위해 남겨둡니다.
+  { name: "연제구"}, 
   { name: "북구"},
   { name: "부산진구"},
   { name: "동구"},
@@ -40,24 +36,20 @@ const OldBuildingBlocksMap: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedGu, setSelectedGu] = useState<string>(BUSAN_GU_LIST[0].name);
 
-  // --- 1. DB 데이터 로드 함수로 변경 ---
   const fetchBlockDataFromDB = useCallback(async (guName: string) => {
     setLoading(true);
     setError(null);
 
     try {
-      // FastAPI 서버의 주소와 새로 추가된 엔드포인트 사용
       const response = await fetch(`http://localhost:8000/blocks/${guName}`);
       if (!response.ok) {
-        // HTTP 상태 코드가 200 범위가 아니면 오류 처리
-        const errorText = await response.text(); // 오류 메시지를 자세히 보기 위해
+        const errorText = await response.text(); 
         throw new Error(
           `블록 데이터를 불러오는 데 실패했습니다: ${response.statusText} (${guName}). 세부: ${errorText}`
         );
       }
       const data: BlockData[] = await response.json();
 
-      // 필터링 로직은 그대로 유지
       const parsedData: BlockData[] = data.filter(
         (block) =>
           !isNaN(block.block_lat) &&
@@ -78,7 +70,6 @@ const OldBuildingBlocksMap: React.FC = () => {
     }
   }, []);
 
-  // --- 2. 카카오 맵 SDK 로드 로직 ---
   useEffect(() => {
     if (!window.kakao || !window.kakao.maps) {
       const script = document.createElement("script");
@@ -86,7 +77,6 @@ const OldBuildingBlocksMap: React.FC = () => {
       script.async = true;
       script.onload = () => {
         console.log("Kakao Maps SDK loaded.");
-        // SDK 로드 후 초기 데이터 로드 (selectedGu 기반)
         fetchBlockDataFromDB(selectedGu);
       };
       script.onerror = (err) => {
@@ -96,20 +86,16 @@ const OldBuildingBlocksMap: React.FC = () => {
       document.head.appendChild(script);
     } else {
       console.log("Kakao Maps SDK already loaded.");
-      // SDK가 이미 로드된 경우에도 초기 데이터 로드
       fetchBlockDataFromDB(selectedGu);
     }
-  }, [fetchBlockDataFromDB, selectedGu]); // selectedGu를 의존성 배열에 추가하여 초기 로드 시 반영되도록 함
+  }, [fetchBlockDataFromDB, selectedGu]); 
 
-  // --- 3. 선택된 구 변경 시 데이터 로드 ---
-  // 이 useEffect는 이제 selectedGu가 변경될 때마다 fetchBlockDataFromDB를 호출합니다.
   useEffect(() => {
     if (window.kakao && window.kakao.maps && mapRef.current) {
       fetchBlockDataFromDB(selectedGu);
     }
   }, [selectedGu, fetchBlockDataFromDB]);
 
-  // --- 4. 카카오 맵 초기화 및 블록 오버레이 그리기 ---
   useEffect(() => {
     if (loading || error || blockData.length === 0) return;
 
@@ -117,7 +103,6 @@ const OldBuildingBlocksMap: React.FC = () => {
     const container = mapContainerRef.current;
     if (!container) return;
 
-    // 기존 맵 및 오버레이 정리
     if (mapRef.current) {
       if (openInfoWindowRef.current) {
         openInfoWindowRef.current.close();
@@ -128,7 +113,7 @@ const OldBuildingBlocksMap: React.FC = () => {
         if (item.infowindow) item.infowindow.close();
       });
       blockOverlaysRef.current = [];
-      container.innerHTML = ""; // 맵 컨테이너 초기화
+      container.innerHTML = ""; 
     }
 
     const map = new kakao.maps.Map(container, {
@@ -187,7 +172,6 @@ const OldBuildingBlocksMap: React.FC = () => {
     });
     blockOverlaysRef.current = newBlockOverlays;
 
-    // 모든 블록을 포함하도록 맵 범위 조정
     if (blockData.length > 0) {
       const bounds = new kakao.maps.LatLngBounds();
       blockData.forEach((block) => {
@@ -203,7 +187,6 @@ const OldBuildingBlocksMap: React.FC = () => {
     }
 
     return () => {
-      // 클린업 함수: 컴포넌트 언마운트 또는 데이터 변경 시 기존 오버레이 및 맵 정리
       blockOverlaysRef.current.forEach((item) => {
         if (item.rectangle) item.rectangle.setMap(null);
         if (item.infowindow) item.infowindow.close();
@@ -220,7 +203,7 @@ const OldBuildingBlocksMap: React.FC = () => {
       }
       mapRef.current = null;
     };
-  }, [blockData, loading, error]); // blockData, loading, error가 변경될 때마다 이펙트 실행
+  }, [blockData, loading, error]); 
 
   const handleGuChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedGu(event.target.value);
