@@ -11,6 +11,7 @@ type FireAddress = {
   id: number;
   address: string;
   memo: string;
+  cause: string;
   username: string;
   created_at: string;
   user_id: number;
@@ -84,7 +85,9 @@ const FireMapView = ({ fireAddresses, selectedId, fireStations }: Props) => {
                 <div style="padding:8px;font-size:14px;max-width:240px;white-space:normal;">
                   <div style="font-weight:bold;margin-bottom:4px;">${addr.address}</div>
                   <div>${addr.memo.replace(/\n/g, "<br/>")}</div>
+                  ${addr.cause ? `<div style=\"font-size:12px;color:gray;\">피해원인: ${addr.cause}</div>` : ''}
                   <div style="font-size:12px;color:gray;margin-top:4px;">작성자: ${addr.username}</div>
+                  <div style="font-size:12px;color:gray;">작성일: ${addr.created_at.split('T')[0]}</div>
                 </div>`,
             });
 
