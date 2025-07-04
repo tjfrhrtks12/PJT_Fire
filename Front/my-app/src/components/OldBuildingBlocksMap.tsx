@@ -8,21 +8,22 @@ declare global {
 }
 
 const BUSAN_GU_LIST = [
-  { name: "연제구"}, 
-  { name: "북구"},
-  { name: "부산진구"},
-  { name: "동구"},
-  { name: "동래구"},
+  { name: "강서구"}, 
   { name: "금정구"},
   { name: "기장군"},
-  { name: "해운대구"},
-  { name: "중구" },
   { name: "남구"},
-  { name: "사하구"},
+  { name: "동구"},
+  { name: "동래구"}, 
+  { name: "북구"},
+  { name: "부산진구"},
   { name: "사상구"},
+  { name: "사하구"},
   { name: "서구"},
   { name: "수영구"},
+  { name: "연제구"},
   { name: "영도구"},
+  { name: "중구" },
+  { name: "해운대구"},
 ];
 
 const OldBuildingBlocksMap: React.FC = () => {
