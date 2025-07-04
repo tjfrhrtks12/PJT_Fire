@@ -4,6 +4,7 @@ from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, create_eng
 from sqlalchemy.orm import sessionmaker, declarative_base, Session, relationship
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
+from sqlalchemy import inspect
 
 # ✅ DB 연결 설정
 DB_URL = "mysql+pymysql://root:1234@localhost:3310/dz-project"
@@ -37,6 +38,7 @@ class FireAddress(Base):
     id = Column(Integer, primary_key=True, index=True)
     address = Column(String(200), nullable=False)
     memo = Column(String(300), nullable=True)
+    cause = Column(String(300), nullable=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime, default=datetime.now)
     user = relationship("User", back_populates="fire_addresses")
@@ -46,8 +48,6 @@ class FireAddress(Base):
 Base.metadata.create_all(bind=engine)
 
 # ── facilities 테이블 및 컬럼 자동 생성 ─────────────────────────────────────
-from sqlalchemy import inspect
-
 # 현재 DB에 반영된 테이블·컬럼 정보 조회
 inspector = inspect(engine)
 with engine.begin() as conn:
@@ -76,6 +76,34 @@ with engine.begin() as conn:
             conn.execute(text("ALTER TABLE facilities ADD COLUMN lng DOUBLE NOT NULL"))
         if "type"    not in existing:
             conn.execute(text("ALTER TABLE facilities ADD COLUMN type TEXT NOT NULL"))
+
+# fire_addresses 테이블 및 컬럼 자동 생성/추가
+with engine.begin() as conn:
+    inspector = inspect(engine)
+    if "fire_addresses" not in inspector.get_table_names():
+        conn.execute(text("""
+            CREATE TABLE fire_addresses (
+                id BIGINT PRIMARY KEY AUTO_INCREMENT,
+                address VARCHAR(200) NOT NULL,
+                memo VARCHAR(300),
+                cause VARCHAR(300),
+                user_id BIGINT NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(user_id) REFERENCES users(id)
+            ) CHARACTER SET utf8mb4;
+        """))
+    else:
+        existing = [c["name"] for c in inspector.get_columns("fire_addresses")]
+        if "address" not in existing:
+            conn.execute(text("ALTER TABLE fire_addresses ADD COLUMN address VARCHAR(200) NOT NULL"))
+        if "memo" not in existing:
+            conn.execute(text("ALTER TABLE fire_addresses ADD COLUMN memo VARCHAR(300)"))
+        if "cause" not in existing:
+            conn.execute(text("ALTER TABLE fire_addresses ADD COLUMN cause VARCHAR(300)"))
+        if "user_id" not in existing:
+            conn.execute(text("ALTER TABLE fire_addresses ADD COLUMN user_id BIGINT NOT NULL"))
+        if "created_at" not in existing:
+            conn.execute(text("ALTER TABLE fire_addresses ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP"))
 
 # ✅ FastAPI 앱 생성
 app = FastAPI()
@@ -107,6 +135,7 @@ class UserCreate(BaseModel):
 class FireAddressCreate(BaseModel):
     address: str
     memo: str
+    cause: str = ""
     user_id: int
 # ===================================
 
@@ -224,10 +253,11 @@ def get_facilities(db: Session = Depends(get_db)):
 
 #==============================================
 @app.post("/fire-addresses")
-def create_fire_address(address: AddressCreate, db: Session = Depends(get_db)):
+def create_fire_address(address: FireAddressCreate, db: Session = Depends(get_db)):
     new_address = FireAddress(
         address=address.address,
         memo=address.memo,
+        cause=address.cause,
         user_id=address.user_id
     )
     db.add(new_address)
@@ -237,6 +267,7 @@ def create_fire_address(address: AddressCreate, db: Session = Depends(get_db)):
         "id": new_address.id,
         "address": new_address.address,
         "memo": new_address.memo,
+        "cause": new_address.cause,
         "username": new_address.user.username,
         "created_at": new_address.created_at.strftime("%Y-%m-%d %H:%M:%S")
     }
@@ -249,6 +280,7 @@ def get_fire_addresses(db: Session = Depends(get_db)):
             "id": a.id,
             "address": a.address,
             "memo": a.memo,
+            "cause": a.cause,
             "username": a.user.username,
             "created_at": a.created_at.strftime("%Y-%m-%d %H:%M:%S"),
             "user_id": a.user_id
@@ -274,12 +306,14 @@ def update_fire_address(address_id: int, address: FireAddressCreate, db: Session
         raise HTTPException(status_code=404, detail="주소를 찾을 수 없습니다.")
     db_address.address = address.address
     db_address.memo = address.memo
+    db_address.cause = address.cause
     db.commit()
     db.refresh(db_address)
     return {
         "id": db_address.id,
         "address": db_address.address,
         "memo": db_address.memo,
+        "cause": db_address.cause,
         "username": db_address.user.username,
         "created_at": db_address.created_at.strftime("%Y-%m-%d %H:%M:%S")
     }
