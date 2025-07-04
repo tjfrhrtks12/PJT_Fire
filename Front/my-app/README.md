@@ -1,16 +1,21 @@
-```
-src/
-├── components/                      #  UI 구성 요소 (재사용 가능한 컴포넌트 모음)
-│   ├── InfoContent.tsx              # 주소 입력/리스트 출력 등 전체 레이아웃을 구성하는 상위 컴포넌트
-│   ├── LoginContent.tsx             # 로그인 입력 UI 구성 (username, password 입력폼)
-│   ├── NavBar.tsx                   # 상단 네비게이션 바 (로그아웃 버튼 포함, 공통 컴포넌트)
-│
-├── pages/                           #  실제 라우팅이 연결되는 페이지 (Route 단위로 작동)
-│   ├── InfoPage.tsx                 # 주소 입력 페이지 (주소, 메모 등록 및 리스트 출력 포함)
-│   ├── LoginPage.tsx                # 로그인 페이지 (로그인 성공 시 InfoPage로 이동)
-│
-├── App.tsx                          #  라우팅 설정 (React Router를 이용해 Page 연결)
-│                                    # - "/" 경로 접근 시 "/login"으로 이동
-│                                    # - "/login" → LoginPage
-│                                    # - "/info"  → InfoPage
-```
+
+  📁 Front/                      # React 기반 재난 대응 통합 프론트엔드
+  ┣ 📁 components/              # 공통 UI + 지도 기능 컴포넌트
+  ┃ ┣ FireMapView.tsx              # 화재/소방서 지도 시각화
+  ┃ ┣ Info2Content.tsx             # 화재 목록 UI
+  ┃ ┣ InfoContent.tsx              # 일반 위험 주소 목록 UI
+  ┃ ┣ LoginContent.tsx             # 로그인 입력 UI
+  ┃ ┣ MapView.tsx                  # 위험지역 + 재난문자 지도
+  ┃ ┣ NavBar.tsx                   # 상단 네비게이션 바
+  ┃ ┗ OldBuildingBlocksMap.tsx     # 노후 건물 지도 시각화
+  ┣ 📁 pages/                   # 라우팅 페이지 구성
+  ┃ ┣ LoginPage.tsx                # 로그인
+  ┃ ┣ RegisterPage.tsx             # 회원가입
+  ┃ ┣ SelectPage.tsx               # 기능 선택 메인
+  ┃ ┣ InfoPage.tsx                 # 사용자 위험지역 등록
+  ┃ ┣ Info2Page.tsx                # 화재 주소 + 소방서 지도
+  ┃ ┗ Info3Page.tsx                # 노후 건물 시각화
+  ┣ 📁 types/
+  ┃ ┗ BlockData.ts                 # 노후 건물 데이터 타입 정의
+  ┣ 📁 public/                  # 정적 파일 경로 (최소 구성)
+  ┣ 📄 App.tsx                  # 전체 라우터 구성 (최상위 컴포넌트)
